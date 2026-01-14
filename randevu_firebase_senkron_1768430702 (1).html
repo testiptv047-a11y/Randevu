@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Randevu Paneli v7 – Haftalık</title>
+  <style>
+    :root{
+      --bg:#060914;
+      --text:#eef4ff;
+      --muted:#a9b6d3;
+      --line:rgba(255,255,255,.12);
+      --shadow: 0 12px 36px rgba(0,0,0,.45);
+      --radius:16px;
+
+      --green1: rgba(28, 150, 85, .72);
+      --green2: rgba(28, 150, 85, .90);
+      --red1: rgba(205, 70, 70, .72);
+      --red2: rgba(205, 70, 70, .90);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1200px 800px at 10% 10%, #132a74 0%, var(--bg) 45%),
+        radial-gradient(1100px 800px at 90% 15%, #163a2c 0%, rgba(0,0,0,0) 55%);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .app{ max-width: none; width: 100%; margin: 0; padding: 12px 12px 18px; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position: sticky; top: 12px; z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+    .brand{ display:flex; align-items:center; gap:10px; min-width: 320px; }
+    .logo{
+      width:36px; height:36px; border-radius:12px;
+      background: linear-gradient(135deg, rgba(122,162,255,.95), rgba(28,150,85,.90));
+      box-shadow: 0 8px 18px rgba(0,0,0,.40);
+    }
+    .brand h1{ margin:0; font-size:16px; letter-spacing:.2px; }
+    .brand .sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+    .controls{ display:flex; align-items:center; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.07);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition:.15s transform, .15s background;
+      user-select:none;
+      font-size:13px;
+      white-space:nowrap;
+    }
+    .btn:hover{ background: rgba(255,255,255,.12); transform: translateY(-1px); }
+    .btn.primary{ background: rgba(122,162,255,.22); border-color: rgba(122,162,255,.38); }
+    .btn.danger{ background: rgba(255,90,90,.20); border-color: rgba(255,90,90,.30); }
+    .datebox{
+      display:flex; align-items:center; gap:10px;
+      padding:8px 10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background: rgba(0,0,0,.18);
+    }
+    input[type="date"]{
+      color:var(--text);
+      background: transparent;
+      border:none;
+      outline:none;
+      font-size:14px;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator{ filter: invert(1); opacity:.85; cursor:pointer; }
+
+    .card{
+      margin-top:14px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardhead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+    }
+    .title{ font-weight:900; font-size:14px; letter-spacing:.2px; }
+    .badge{
+      font-size:12px; color:var(--muted);
+      padding:4px 10px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
+      white-space:nowrap;
+    }
+
+    .wrap{
+      overflow:auto;
+      max-height: calc(100vh - 190px);
+      position: relative;
+    }
+    table.week{
+      width:100%;
+      border-collapse:collapse;
+      min-width: 1300px;
+    }
+    .week th, .week td{
+  min-width: 190px;          /* standart + biraz genişleyebilir */
+  max-width: 240px;
+  overflow: hidden;
+}
+    .week th{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(0,0,0,.28);
+      backdrop-filter: blur(10px);
+      text-align:center;
+      font-size:12px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .week th.timeHead{
+      left:0;
+      z-index: 6;
+      text-align:left;
+    }
+    .week td.timeCol{
+      position: sticky;
+      left:0;
+      z-index: 4;
+      background: rgba(0,0,0,.28);
+      color: var(--muted);
+      width:86px;
+      font-size:13px;
+      font-variant-numeric: tabular-nums;
+      white-space:nowrap;
+    }
+
+    .cell{
+      min-height:64px;
+      border-radius:12px;
+      border: 1px solid rgba(255,255,255,.14);
+      overflow:hidden;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.12);
+      display:flex;
+      flex-direction: column;
+    }
+    .slot{
+      flex: 1 1 auto;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 6px 8px;
+    }
+    .slot.empty{
+      background: linear-gradient(180deg, var(--green2), var(--green1));
+      cursor:pointer;
+      user-select:none;
+    }
+    .slot.filled{
+      background: linear-gradient(180deg, var(--red2), var(--red1));
+      cursor: default;
+      user-select:none;
+    }
+    .slot + .slot{ border-top: 1px solid rgba(255,255,255,.10); }
+
+    .plusBox{ display:flex; align-items:center; gap:8px; font-size:12px; color: rgba(255,255,255,.95); }
+    .plus{
+      width:28px; height:28px;
+      border-radius:10px;
+      display:grid; place-items:center;
+      background: rgba(0,0,0,.24);
+      border: 1px solid rgba(255,255,255,.18);
+      font-weight:900; font-size:18px; line-height:1;
+    }
+
+    /* Compact appointment: brand + phone only */
+    .appt{
+  width:100%;
+  height:100%;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "name job"
+    "brand phone";
+  align-items:center;
+  gap:4px 10px;
+  font-size:12px;
+  font-weight:900;
+  line-height:1.1;
+  overflow:hidden;
+}
+.appt .a-left{ min-width:0; }
+.appt .a-name{
+  font-size:11px;
+  opacity:.95;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.appt .a-brand{
+  font-size:12px;
+  letter-spacing:.2px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.appt .a-mid{
+  text-align:center;
+  font-size:11px;
+  font-weight:800;
+  opacity:.95;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.appt .a-right{
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+  font-size:12px;
+  opacity:.98;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+    /* Modal: readable */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.78);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index: 50;
+    }
+    .overlay.show{ display:flex; }
+    .modal{
+      width: min(760px, 100%);
+      background: rgba(12, 18, 40, .96);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modalhead{
+      padding:12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.14);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background: rgba(0,0,0,.35);
+    }
+    .modalhead .mtitle{ font-weight: 950; font-size:14px; }
+    .modalbody{ padding:14px; }
+    .form{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    .field label{ font-size:12px; color: rgba(255,255,255,.82); }
+    .field input, .field select, .field textarea{
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.40);
+      color: var(--text);
+      outline:none;
+      font-size:14px;
+    }
+    .field textarea{ min-height:64px; resize:vertical; grid-column: 1 / -1; }
+    .rowfull{ grid-column: 1 / -1; }
+    .modalfoot{
+      display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+      padding:12px 14px;
+      border-top: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.24);
+    }
+
+    /* Context menu */
+    .ctx{
+      position:fixed; z-index: 60;
+      background: rgba(12, 18, 40, .98);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius:14px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      min-width: 260px;
+      display:none;
+    }
+    .ctx.show{ display:block; }
+    .ctx button{
+      width:100%;
+      text-align:left;
+      padding:10px 12px;
+      background: transparent;
+      border:none;
+      color: var(--text);
+      cursor:pointer;
+      font-size:13px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .ctx button:hover{ background: rgba(255,255,255,.10); }
+    .ctx .sep{ height:1px; background: rgba(255,255,255,.10); }
+
+    @media (max-width: 980px){
+      .form{ grid-template-columns: 1fr; }
+    }
+  
+
+/* 2x2 yerleşim */
+.appt .a-name{ grid-area:name; text-align:left; }
+.appt .a-mid{ grid-area:job; text-align:right; }
+.appt .a-brand{ grid-area:brand; text-align:left; }
+.appt .a-right{ grid-area:phone; text-align:right; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Randevu Paneli • Haftalık</h1>
+        <div class="sub">08:30–22:00 • 30 dk • slot 1 → aynı saat 2. randevu: <b>sağ tık</b> • max 2 • çift tık: düzenle</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn" id="prevWeek">◀ Önceki Hafta</button>
+      <div class="datebox">
+        <span style="font-size:12px;color:var(--muted)">Hafta</span>
+        <input type="date" id="datePick"/>
+      </div>
+      <button class="btn" id="nextWeek">Sonraki Hafta ▶</button>
+      <button class="btn primary" id="todayBtn">Bugün</button>
+      
+      <button class="btn primary" id="cloudSignInBtn">Buluta Giriş</button>
+      <button class="btn" id="cloudSignOutBtn" style="display:none">Buluttan Çık</button>
+      <span class="badge" id="cloudStatus" style="display:none">Bulut: —</span>
+<button class="btn" id="importBtn">İçe Aktar</button>
+      <button class="btn" id="exportBtn">Dışa Aktar</button>
+      <button class="btn danger" id="wipeBtn">Tüm Kayıtları Sil</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none"/>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="cardhead">
+      <div class="title" id="weekTitle">—</div>
+      <div class="badge" id="weekStats">—</div>
+    </div>
+    <div class="wrap">
+      <table class="week" id="weekTable">
+        <thead><tr id="headRow"><th class="timeHead">Saat</th></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal" role="document">
+    <div class="modalhead">
+      <div class="mtitle" id="modalTitle">Randevu</div>
+      <button class="btn" id="closeModal">Kapat ✕</button>
+    </div>
+    <div class="modalbody">
+      <div class="form">
+        <div class="field"><label>İsim</label><input id="fName" placeholder="Müşteri adı"/></div>
+        <div class="field"><label>Numara</label><input id="fPhone" placeholder="+32 ... / 05xx ..."/></div>
+        <div class="field"><label>Araba</label><input id="fCar" placeholder="Marka / model / plaka"/></div>
+        <div class="field"><label>İşlem Türü</label><input id="fJob" placeholder="Bakım, yağ değişimi, fren..."/></div>
+        <div class="field"><label>Tutar</label><input id="fAmount" placeholder="€ / ₺"/></div>
+        <div class="field"><label>Tarih</label><input type="date" id="fDate"/></div>
+        <div class="field"><label>Saat</label><select id="fTime"></select></div>
+        <div class="field rowfull"><label>Not (opsiyonel)</label><textarea id="fNote" placeholder="Ek notlar..."></textarea></div>
+      </div>
+    </div>
+    <div class="modalfoot">
+      <button class="btn" id="cancelBtn">İptal</button>
+      <button class="btn primary" id="saveBtn">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context menu -->
+<div class="ctx" id="ctxMenu">
+  <button id="ctxAddSame">Aynı Saate Randevu Ekle <span>＋</span></button>
+  <div class="sep"></div>
+  <button id="ctxPostpone">Ertele <span>↪</span></button>
+  <div class="sep"></div>
+  <button id="ctxDelete" style="color: rgba(255,170,170,1)">Sil <span>🗑</span></button>
+</div>
+
+<!-- Firebase (Cloud Sync) -->
+<script type="module">
+  // 1) Firebase configini buraya yapıştır (Firebase Console > Project settings > Your apps > Web app)
+  // ÖRNEK:
+  // const firebaseConfig = { apiKey:"...", authDomain:"...", projectId:"...", storageBucket:"...", messagingSenderId:"...", appId:"..." };
+  const firebaseConfig = {
+    apiKey: "PASTE_HERE",
+    authDomain: "PASTE_HERE",
+    projectId: "PASTE_HERE",
+    storageBucket: "PASTE_HERE",
+    messagingSenderId: "PASTE_HERE",
+    appId: "PASTE_HERE"
+  };
+
+  // Firebase SDK (modular)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import {
+    getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, where, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Uygulama JS'i (module olmayan script) bu global değişkenleri kullanacak:
+  window.__CLOUD__ = {
+    auth, db, provider,
+    signInWithPopup, signOut, onAuthStateChanged,
+    collection, doc, setDoc, getDocs, deleteDoc, query, where, onSnapshot
+  };
+</script>
+
+<script>
+(() => {
+  const START_MIN = 8*60 + 30;
+  const END_MIN = 22*60;
+  const STEP_MIN = 30;
+  const CAPACITY = 2;
+
+  const LS_KEY = "tamirci_randevu_db_week_v7";
+
+// =========================
+// Bulut Senkron (Firebase)
+// =========================
+const cloudSignInBtn = document.getElementById("cloudSignInBtn");
+const cloudSignOutBtn = document.getElementById("cloudSignOutBtn");
+const cloudStatus = document.getElementById("cloudStatus");
+
+let cloud = null;       // window.__CLOUD__
+let cloudUser = null;   // auth user
+let cloudUnsub = null;  // realtime listener
+let cloudReady = false;
+
+function cloudKey(appt){ return appt?.id; } // doc id
+
+function setCloudUI(stateText, signedIn){
+  if(!cloudStatus) return;
+  cloudStatus.style.display = "";
+  cloudStatus.textContent = stateText;
+  cloudSignInBtn.style.display = signedIn ? "none" : "";
+  cloudSignOutBtn.style.display = signedIn ? "" : "none";
+}
+
+function isCloudEnabled(){
+  // Config yapıştırılmadıysa false
+  const cfg = (cloud && cloud.db) ? true : false;
+  return cfg;
+}
+
+async function cloudUpsert(appt, dateYMD, timeHHMM){
+  if(!cloudUser || !cloudReady) return;
+  const ref = cloud.doc(cloud.db, "users", cloudUser.uid, "appts", cloudKey(appt));
+  await cloud.setDoc(ref, {
+    id: appt.id,
+    date: dateYMD,
+    time: timeHHMM,
+    name: appt.name || "",
+    phone: appt.phone || "",
+    car: appt.car || "",
+    job: appt.job || "",
+    amount: appt.amount || "",
+    note: appt.note || "",
+    createdAt: appt.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }, { merge:true });
+}
+
+async function cloudRemove(apptId){
+  if(!cloudUser || !cloudReady) return;
+  const ref = cloud.doc(cloud.db, "users", cloudUser.uid, "appts", apptId);
+  await cloud.deleteDoc(ref);
+}
+
+function clearCloudListener(){
+  if(cloudUnsub){ try{ cloudUnsub(); }catch(e){} }
+  cloudUnsub = null;
+}
+
+function rebuildDBFromDocs(docs){
+  db = {}; // overwrite in-memory db
+  for(const d of docs){
+    const a = d;
+    if(!a?.date || !a?.time) continue;
+    const slot = ensureSlot(a.date, a.time);
+    // capacity enforcement (2)
+    if(slot.length >= CAPACITY) continue;
+    slot.push({
+      id: a.id,
+      name: a.name || "",
+      phone: a.phone || "",
+      car: a.car || "",
+      job: a.job || "",
+      amount: a.amount || "",
+      note: a.note || "",
+      createdAt: a.createdAt || ""
+    });
+  }
+  saveDB(db); // local cache
+}
+
+function attachCloudWeekListener(){
+  if(!cloudUser || !cloudReady) return;
+  clearCloudListener();
+  if(weekDays.length===0) computeWeekDays();
+  const start = ymd(weekDays[0]);
+  const end = ymd(weekDays[6]);
+  const col = cloud.collection(cloud.db, "users", cloudUser.uid, "appts");
+  const q = cloud.query(col, cloud.where("date", ">=", start), cloud.where("date", "<=", end));
+  setCloudUI("Bulut: senkron…", true);
+
+  cloudUnsub = cloud.onSnapshot(q, (snap)=>{
+    const docs = [];
+    snap.forEach(docu=> docs.push(docu.data()));
+    rebuildDBFromDocs(docs);
+    setCloudUI("Bulut: bağlı ✅", true);
+    render(); // reflect any changes
+  }, (err)=>{
+    console.error(err);
+    setCloudUI("Bulut: hata ❌", true);
+  });
+}
+
+function initCloud(){
+  cloud = window.__CLOUD__ || null;
+  // Config yapıştırılmadıysa __CLOUD__ oluşabilir ama initializeApp hatası nedeniyle hiç oluşmayabilir.
+  if(!cloud){
+    setCloudUI("Bulut: kapalı", false);
+    cloudStatus.style.display = "none";
+    return;
+  }
+  cloudReady = true;
+  setCloudUI("Bulut: giriş bekliyor", false);
+
+  cloudSignInBtn?.addEventListener("click", async ()=>{
+    try{
+      await cloud.signInWithPopup(cloud.auth, cloud.provider);
+    }catch(e){
+      alert("Bulut girişi başarısız: " + (e?.message||e));
+    }
+  });
+  cloudSignOutBtn?.addEventListener("click", async ()=>{
+    try{ await cloud.signOut(cloud.auth); }catch(e){}
+  });
+
+  cloud.onAuthStateChanged(cloud.auth, (u)=>{
+    cloudUser = u || null;
+    if(!cloudUser){
+      clearCloudListener();
+      setCloudUI("Bulut: giriş yap", false);
+      // local mode remains
+      return;
+    }
+    setCloudUI("Bulut: bağlı ✅", true);
+    attachCloudWeekListener();
+  });
+}
+
+  const pad2 = (n)=> String(n).padStart(2,'0');
+  const minsToHHMM = (m)=> `${pad2(Math.floor(m/60))}:${pad2(m%60)}`;
+  const ymd = (d)=> `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  const uid = ()=> Math.random().toString(36).slice(2,10) + "-" + Date.now().toString(36);
+  const escapeHTML = (s)=> String(s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+  const clampToScreen = (x,y,w,h)=> {
+    const px = Math.max(8, Math.min(x, window.innerWidth - w - 8));
+    const py = Math.max(8, Math.min(y, window.innerHeight - h - 8));
+    return {px,py};
+  };
+
+  const loadDB = ()=> { try{ return JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch(e){ return {}; } };
+  const saveDB = (db)=> localStorage.setItem(LS_KEY, JSON.stringify(db));
+
+  function startOfWeekMonday(d){
+    const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = (x.getDay()+6)%7; // Mon=0
+    x.setDate(x.getDate() - day);
+    x.setHours(12,0,0,0);
+    return x;
+  }
+  function prettyDayHeader(d){
+    const wd = d.toLocaleDateString('tr-TR', {weekday:'short'});
+    return `${wd}<br><span style="font-variant-numeric:tabular-nums">${pad2(d.getDate())}.${pad2(d.getMonth()+1)}</span>`;
+  }
+  function prettyRange(a,b){
+    const fmt = (d)=> d.toLocaleDateString('tr-TR', {year:'numeric', month:'long', day:'2-digit'});
+    return `${fmt(a)} — ${fmt(b)}`;
+  }
+  function carBrand(carText){
+    const t = (carText||"").trim();
+    if(!t) return "ARABA?";
+    const p = t.split(/[\s\/\-]+/).filter(Boolean);
+    return (p[0] || t).toUpperCase();
+  }
+
+  // Elements
+  const datePick = document.getElementById("datePick");
+  const prevWeek = document.getElementById("prevWeek");
+  const nextWeek = document.getElementById("nextWeek");
+  const todayBtn = document.getElementById("todayBtn");
+  const headRow = document.getElementById("headRow");
+  const body = document.getElementById("body");
+  const weekTitle = document.getElementById("weekTitle");
+  const weekStats = document.getElementById("weekStats");
+
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+  const wipeBtn = document.getElementById("wipeBtn");
+
+  const overlay = document.getElementById("overlay");
+  const closeModal = document.getElementById("closeModal");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  const modalTitle = document.getElementById("modalTitle");
+
+  const fName = document.getElementById("fName");
+  const fPhone = document.getElementById("fPhone");
+  const fCar = document.getElementById("fCar");
+  const fJob = document.getElementById("fJob");
+  const fAmount = document.getElementById("fAmount");
+  const fNote = document.getElementById("fNote");
+  const fDate = document.getElementById("fDate");
+  const fTime = document.getElementById("fTime");
+
+  const ctxMenu = document.getElementById("ctxMenu");
+  const ctxAddSame = document.getElementById("ctxAddSame");
+  const ctxPostpone = document.getElementById("ctxPostpone");
+  const ctxDelete = document.getElementById("ctxDelete");
+
+  // State
+  let db = loadDB();
+  let anchorDate = new Date();
+  let weekDays = [];
+  let TIME_LIST = [];
+  let modalMode = "add"; // add | edit | postpone | addSame
+  let modalTarget = null; // {date,time, apptId?}
+  let ctxTarget = null;   // {date,time, apptId}
+  let ctxSlotLen = 0;
+
+  function buildTimes(){
+    TIME_LIST = [];
+    fTime.innerHTML = "";
+    for(let m=START_MIN; m<END_MIN; m+=STEP_MIN){
+      const t = minsToHHMM(m);
+      TIME_LIST.push(t);
+      const opt = document.createElement("option");
+      opt.value = t;
+      opt.textContent = t;
+      fTime.appendChild(opt);
+    }
+  }
+
+  // DB ops
+  function ensureDay(dateYMD){ if(!db[dateYMD]) db[dateYMD] = {}; return db[dateYMD]; }
+  function readSlot(dateYMD, timeHHMM){ return (db[dateYMD] && db[dateYMD][timeHHMM]) ? db[dateYMD][timeHHMM] : []; }
+  function ensureSlot(dateYMD, timeHHMM){ const day=ensureDay(dateYMD); if(!day[timeHHMM]) day[timeHHMM]=[]; return day[timeHHMM]; }
+  function countDay(dateYMD){
+    const day = db[dateYMD] || {};
+    let c=0; Object.values(day).forEach(arr=> c += (arr?.length||0));
+    return c;
+  }
+  function countWeek(){
+    let c=0;
+    for(const d of weekDays) c += countDay(ymd(d));
+    return c;
+  }
+  function addAppt(dateYMD, timeHHMM, appt){
+    const slot = ensureSlot(dateYMD, timeHHMM);
+    if(slot.length >= CAPACITY) return {ok:false, msg:"Bu saat dolu (max 2)."};
+    slot.push(appt);
+    saveDB(db);
+    // cloud mirror
+    cloudUpsert(appt, dateYMD, timeHHMM).catch(console.error);
+    return {ok:true};
+  }
+  function deleteAppt(dateYMD, timeHHMM, apptId){
+    const slot = ensureSlot(dateYMD, timeHHMM);
+    const idx = slot.findIndex(a=> a.id===apptId);
+    if(idx>=0) slot.splice(idx,1);
+    if(slot.length===0){
+      delete db[dateYMD][timeHHMM];
+      if(Object.keys(db[dateYMD]).length===0) delete db[dateYMD];
+    }
+    saveDB(db);
+    cloudRemove(apptId).catch(console.error);
+  }
+  function moveAppt(fromDate, fromTime, apptId, toDate, toTime){
+    const fromSlot = ensureSlot(fromDate, fromTime);
+    const appt = fromSlot.find(a=> a.id===apptId);
+    if(!appt) return {ok:false, msg:"Randevu bulunamadı."};
+    const toSlot = ensureSlot(toDate, toTime);
+    if(toSlot.length >= CAPACITY) return {ok:false, msg:"Seçilen yeni saat dolu (max 2)."};
+    deleteAppt(fromDate, fromTime, apptId);
+    toSlot.push(appt);
+    saveDB(db);
+    cloudUpsert(appt, toDate, toTime).catch(console.error);
+    return {ok:true};
+  }
+
+  // UI: context menu
+  function hideCtxMenu(){
+    ctxMenu.classList.remove("show");
+    ctxMenu.style.left = "-9999px";
+    ctxMenu.style.top  = "-9999px";
+  }
+  function showCtxMenu(x,y){
+    ctxMenu.classList.add("show");
+    ctxMenu.style.left = "0px";
+    ctxMenu.style.top  = "0px";
+    const rect = ctxMenu.getBoundingClientRect();
+    const {px,py} = clampToScreen(x,y,rect.width,rect.height);
+    ctxMenu.style.left = px+"px";
+    ctxMenu.style.top  = py+"px";
+  }
+
+  // Modal helpers
+  function openModal(mode, target, appt){
+    modalMode = mode;
+    modalTarget = target;
+
+    if(mode==="add"){
+      modalTitle.textContent = `${target.date.split("-").reverse().join("/")} • ${target.time} — Randevu Ekle`;
+      fName.value=""; fPhone.value=""; fCar.value=""; fJob.value=""; fAmount.value=""; fNote.value="";
+      fDate.value = target.date; fTime.value = target.time;
+    } else if(mode==="addSame"){
+      modalTitle.textContent = `${target.date.split("-").reverse().join("/")} • ${target.time} — Aynı Saate 2. Randevu`;
+      fName.value=""; fPhone.value=""; fCar.value=""; fJob.value=""; fAmount.value=""; fNote.value="";
+      fDate.value = target.date; fTime.value = target.time;
+    } else if(mode==="edit"){
+      modalTitle.textContent = "Randevu Düzenle";
+      fName.value = appt?.name || "";
+      fPhone.value = appt?.phone || "";
+      fCar.value = appt?.car || "";
+      fJob.value = appt?.job || "";
+      fAmount.value = appt?.amount || "";
+      fNote.value = appt?.note || "";
+      fDate.value = target.date;
+      fTime.value = target.time;
+    } else if(mode==="postpone"){
+      modalTitle.textContent = "Randevu Ertele";
+      fName.value = appt?.name || "";
+      fPhone.value = appt?.phone || "";
+      fCar.value = appt?.car || "";
+      fJob.value = appt?.job || "";
+      fAmount.value = appt?.amount || "";
+      fNote.value = appt?.note || "";
+      fDate.value = target.date;
+      fTime.value = target.time;
+    }
+
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden","false");
+    setTimeout(()=> fName.focus(), 30);
+  }
+  function closeModalFn(){
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden","true");
+    modalMode = "add";
+    modalTarget = null;
+  }
+
+  // Render appointment (compact) with dblclick edit + context menu
+  function renderAppt(dateYMD, timeHHMM, appt){
+  const el = document.createElement("div");
+  el.className = "appt";
+  el.dataset.date = dateYMD;
+  el.dataset.time = timeHHMM;
+  el.dataset.id = appt.id;
+
+  const name = (appt.name || "").trim() || "—";
+  const brand = carBrand(appt.car);
+  const job = (appt.job || "").trim() || "İşlem: —";
+  const phone = (appt.phone || "").trim() || "—";
+
+  el.innerHTML = `
+    <div class="a-name">${escapeHTML(name)}</div>
+    <div class="a-mid">${escapeHTML(job)}</div>
+    <div class="a-brand">${escapeHTML(brand)}</div>
+    <div class="a-right">${escapeHTML(phone)}</div>
+  `;
+
+  el.addEventListener("dblclick", (e)=>{
+    e.preventDefault();
+    const slot = ensureSlot(dateYMD, timeHHMM);
+    const cur = slot.find(a=> a.id===appt.id);
+    if(!cur) return;
+    openModal("edit", {date: dateYMD, time: timeHHMM, apptId: appt.id}, cur);
+  });
+
+  el.addEventListener("contextmenu", (e)=>{
+    e.preventDefault();
+    ctxTarget = {date: dateYMD, time: timeHHMM, apptId: appt.id};
+    ctxSlotLen = readSlot(dateYMD, timeHHMM).length;
+    ctxAddSame.style.display = (ctxSlotLen < CAPACITY) ? "" : "none";
+    showCtxMenu(e.clientX, e.clientY);
+  });
+
+  return el;
+}
+
+  // Render cell: 0 => green add button, 1 => single red slot, 2 => split red slots
+  function renderCell(dateYMD, timeHHMM){
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    const slotArr = readSlot(dateYMD, timeHHMM);
+
+    if(slotArr.length === 0){
+      const s = document.createElement("div");
+      s.className = "slot empty";
+      s.innerHTML = `<div class="plusBox"><div class="plus">+</div><span>Ekle</span></div>`;
+      s.addEventListener("click", ()=> openModal("add", {date: dateYMD, time: timeHHMM}, null));
+      cell.appendChild(s);
+      return cell;
+    }
+
+    const s1 = document.createElement("div");
+    s1.className = "slot filled";
+    s1.appendChild(renderAppt(dateYMD, timeHHMM, slotArr[0]));
+    cell.appendChild(s1);
+
+    if(slotArr.length >= 2){
+      const s2 = document.createElement("div");
+      s2.className = "slot filled";
+      s2.appendChild(renderAppt(dateYMD, timeHHMM, slotArr[1]));
+      cell.appendChild(s2);
+    }
+
+    return cell;
+  }
+
+  function computeWeekDays(){
+    const mon = startOfWeekMonday(anchorDate);
+    weekDays = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(mon);
+      d.setDate(mon.getDate()+i);
+      weekDays.push(d);
+    }
+  }
+
+  function render(){
+    computeWeekDays();
+    if(cloudUser && cloudReady){ attachCloudWeekListener(); }
+    datePick.value = ymd(anchorDate);
+    weekTitle.textContent = prettyRange(weekDays[0], weekDays[6]);
+    weekStats.textContent = `${countWeek()} randevu • max aynı saate: ${CAPACITY}`;
+
+    headRow.innerHTML = `<th class="timeHead">Saat</th>`;
+    for(const d of weekDays){
+      const th = document.createElement("th");
+      th.innerHTML = prettyDayHeader(d);
+      headRow.appendChild(th);
+    }
+
+    body.innerHTML = "";
+    for(const t of TIME_LIST){
+      const tr = document.createElement("tr");
+      const tdTime = document.createElement("td");
+      tdTime.className = "timeCol";
+      tdTime.textContent = t;
+      tr.appendChild(tdTime);
+
+      for(const d of weekDays){
+        const td = document.createElement("td");
+        td.appendChild(renderCell(ymd(d), t));
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
+  }
+
+  // Buttons
+  prevWeek.addEventListener("click", ()=> { anchorDate = new Date(anchorDate.getTime() - 7*86400000); render(); });
+  nextWeek.addEventListener("click", ()=> { anchorDate = new Date(anchorDate.getTime() + 7*86400000); render(); });
+  todayBtn.addEventListener("click", ()=> { anchorDate = new Date(); render(); });
+  datePick.addEventListener("change", ()=> {
+    if(!datePick.value) return;
+    anchorDate = new Date(datePick.value + "T12:00:00");
+    render();
+  });
+
+  // Modal events
+  closeModal.addEventListener("click", closeModalFn);
+  cancelBtn.addEventListener("click", closeModalFn);
+  overlay.addEventListener("click", (e)=> { if(e.target === overlay) closeModalFn(); });
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape"){
+      hideCtxMenu();
+      if(overlay.classList.contains("show")) closeModalFn();
+    }
+  });
+
+  // Save
+  saveBtn.addEventListener("click", ()=>{
+    const dateYMD = fDate.value;
+    const timeHHMM = fTime.value;
+    if(!dateYMD || !timeHHMM){
+      alert("Tarih ve saat seç.");
+      return;
+    }
+
+    // Find existing appointment if edit/postpone
+    if((modalMode==="edit" || modalMode==="postpone") && modalTarget?.apptId){
+      const slot = ensureSlot(modalTarget.date, modalTarget.time);
+      const appt = slot.find(a=> a.id===modalTarget.apptId);
+      if(!appt){
+        alert("Randevu bulunamadı.");
+        return;
+      }
+
+      // update fields
+      appt.name = (fName.value||"").trim();
+      appt.phone = (fPhone.value||"").trim();
+      appt.car = (fCar.value||"").trim();
+      appt.job = (fJob.value||"").trim();
+      appt.amount = (fAmount.value||"").trim();
+      appt.note = (fNote.value||"").trim();
+
+      // move if date/time changed
+      if(dateYMD !== modalTarget.date || timeHHMM !== modalTarget.time){
+        const res = moveAppt(modalTarget.date, modalTarget.time, modalTarget.apptId, dateYMD, timeHHMM);
+        if(!res.ok){ alert(res.msg); return; }
+      } else {
+        saveDB(db);
+        cloudUpsert(appt, dateYMD, timeHHMM).catch(console.error);
+      }
+
+      closeModalFn();
+      anchorDate = new Date(dateYMD + "T12:00:00");
+      render();
+      return;
+    }
+
+    // Add / AddSame
+    const appt = {
+      id: uid(),
+      name: (fName.value||"").trim(),
+      phone: (fPhone.value||"").trim(),
+      car: (fCar.value||"").trim(),
+      job: (fJob.value||"").trim(),
+      amount: (fAmount.value||"").trim(),
+      note: (fNote.value||"").trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    const res = addAppt(dateYMD, timeHHMM, appt);
+    if(!res.ok){ alert(res.msg); return; }
+
+    closeModalFn();
+    anchorDate = new Date(dateYMD + "T12:00:00");
+    render();
+  });
+
+  // Context menu actions
+  ctxAddSame.addEventListener("click", ()=>{
+    if(!ctxTarget) return;
+    hideCtxMenu();
+    const slotLen = readSlot(ctxTarget.date, ctxTarget.time).length;
+    if(slotLen >= CAPACITY){
+      alert("Bu saat dolu (max 2).");
+      return;
+    }
+    openModal("addSame", {date: ctxTarget.date, time: ctxTarget.time}, null);
+  });
+
+  ctxPostpone.addEventListener("click", ()=>{
+    if(!ctxTarget) return;
+    hideCtxMenu();
+    const slot = ensureSlot(ctxTarget.date, ctxTarget.time);
+    const appt = slot.find(a=> a.id===ctxTarget.apptId);
+    if(!appt) return;
+    openModal("postpone", {date: ctxTarget.date, time: ctxTarget.time, apptId: ctxTarget.apptId}, appt);
+  });
+
+  ctxDelete.addEventListener("click", ()=>{
+    if(!ctxTarget) return;
+    const ok = confirm("Bu randevuyu silmek istiyor musun?");
+    if(!ok) return;
+    deleteAppt(ctxTarget.date, ctxTarget.time, ctxTarget.apptId);
+    hideCtxMenu();
+    render();
+  });
+
+  document.addEventListener("click", ()=> hideCtxMenu());
+  window.addEventListener("scroll", ()=> hideCtxMenu(), {passive:true});
+  window.addEventListener("resize", ()=> hideCtxMenu());
+
+  // Export/Import/Wipe
+  exportBtn.addEventListener("click", ()=>{
+    const blob = new Blob([JSON.stringify(db, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "randevu_yedek.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(a.href), 800);
+  });
+
+  importBtn.addEventListener("click", ()=> importFile.click());
+  importFile.addEventListener("change", async ()=>{
+    const file = importFile.files && importFile.files[0];
+    importFile.value = "";
+    if(!file) return;
+    try{
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if(typeof data !== "object" || data === null){ alert("Geçersiz dosya."); return; }
+
+      let added=0, skipped=0;
+      for(const [dateKey, dayObj] of Object.entries(data)){
+        if(typeof dayObj !== "object" || dayObj === null) continue;
+        for(const [timeKey, arr] of Object.entries(dayObj)){
+          if(!Array.isArray(arr)) continue;
+          const slot = ensureSlot(dateKey, timeKey);
+          for(const ap of arr){
+            if(slot.length >= CAPACITY){ skipped++; continue; }
+            const appt = {
+              id: ap?.id || uid(),
+              name: (ap?.name||"").trim(),
+              phone: (ap?.phone||"").trim(),
+              car: (ap?.car||"").trim(),
+              job: (ap?.job||"").trim(),
+              amount: (ap?.amount||"").trim(),
+              note: (ap?.note||"").trim(),
+              createdAt: ap?.createdAt || new Date().toISOString()
+            };
+            if(slot.some(x=> x.id===appt.id)){ skipped++; continue; }
+            slot.push(appt);
+            added++;
+          }
+        }
+      }
+      saveDB(db);
+      render();
+      alert(`İçe aktarma tamamlandı.\nEklenen: ${added}\nAtlanan (dolu/tekrar): ${skipped}`);
+    }catch(e){
+      alert("İçe aktarım hatası: dosya JSON değil veya bozuk.");
+    }
+  });
+
+  wipeBtn.addEventListener("click", ()=>{
+    const ok = confirm("TÜM kayıtları sileceksin. Emin misin?");
+    if(!ok) return;
+    localStorage.removeItem(LS_KEY);
+    db = {};
+    render();
+  });
+
+  // Init
+  buildTimes();
+  anchorDate = new Date();
+  datePick.value = ymd(anchorDate);
+  initCloud();
+  render();
+})();
+</script>
+</body>
+</html>
